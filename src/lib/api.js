@@ -1,79 +1,36 @@
 
-const REQUEST_TIMEOUT_MS = 60000;
+const API_URL = '/api';
 
-async function request(path, body) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    REQUEST_TIMEOUT_MS
-  );
+async function apiRequest(path, data = null) {
+    const options = {
+        method: data ? 'POST' : 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
 
-  try {
-    const response = await fetch(`/api${path}`, {
-      method: body ? 'POST' : 'GET',
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal
-    });
-
-    const responseText = await response.text();
-
-    let data = null;
-
-    if (responseText.trim()) {
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        throw new Error(
-          'The server returned an unreadable response. Please check the backend and try again.'
-        );
-      }
+    if (data) {
+        options.body = JSON.stringify(data);
     }
+
+    const response = await fetch(`${API_URL}${path}`, options);
 
     if (!response.ok) {
-      const detail = data?.detail;
-      let message = 'The request could not be completed.';
-
-      if (typeof detail === 'string') {
-        message = detail;
-      } else if (Array.isArray(detail)) {
-        message = detail
-          .map((item) => item.msg)
-          .filter(Boolean)
-          .join('; ') || message;
-      } else if (detail && typeof detail === 'object') {
-        message = detail.message || message;
-      }
-
-      throw new Error(message);
+        const message = await response.text();
+        throw new Error(message || `API error: ${response.status}`);
     }
 
-    if (data === null) {
-      throw new Error('The server returned an empty response. Please try again.');
-    }
-
-    return data;
-
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error(
-        'The request took too long. Please check your connection and try again.'
-      );
-    }
-
-    if (error instanceof TypeError) {
-      throw new Error(
-        'Could not connect to the server. Please check whether the backend is running.'
-      );
-    }
-
-    throw error;
-
-  } finally {
-    clearTimeout(timeoutId);
-  }
+    return response.json();
 }
 
-export const checkHealth = () => request('/health');
-export const lookupMedicine = (payload) => request('/lookup', payload);
-export const askMedicine = (payload) => request('/chat', payload);
+export function checkHealth() {
+    return apiRequest('/health');
+}
+
+export function lookupMedicine(data) {
+    return apiRequest('/lookup', data);
+}
+
+export function askMedicine(data) {
+    return apiRequest('/chat', data);
+}
