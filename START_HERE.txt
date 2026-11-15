@@ -1,0 +1,20 @@
+MEDICINE BUDDY — START HERE
+
+1) Install Node.js 20.19+ (or 22.12+) and Python 3.10+.
+2) Open this folder in VS Code.
+3) Terminal 1:
+   py -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install -r requirements.txt
+   Copy-Item .env.example .env
+   (Add your Tavily free API key in .env; do not enable paid usage.)
+   python -m uvicorn main:app --reload --port 8000
+4) Terminal 2:
+   npm install
+   npm run dev
+5) Open http://localhost:5173
+6) For exact explanations and Vercel deployment, follow README.md.
+
+The home page does not load OCR. OCR downloads/initialises only after you click
+"Scan selected photos". The first scan can take longer. No medicine catalogue
+or sample medicine facts are bundled.

@@ -1,0 +1,10 @@
+node_modules/
+.svelte-kit/
+build/
+.vercel/
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+/public/

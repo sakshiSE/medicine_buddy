@@ -1,0 +1,1 @@
+"""Medicine Buddy backend package."""
