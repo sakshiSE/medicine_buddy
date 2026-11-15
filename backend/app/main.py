@@ -2252,6 +2252,5 @@ async def chat(
 
     return result
 
-FRONTEND_DIR = Path(__file__).resolve().parents[2] / "public"
-
+FRONTEND_DIR = Path(__file__).resolve().parents[2] / "build"
 app.frontend("/", directory=FRONTEND_DIR)
