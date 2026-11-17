@@ -1,185 +1,247 @@
 # Medicine Buddy
 
-A fresh India-first medicine information website. This project is intentionally **not** a rebrand of the supplied MedLens reference ZIP. It uses the reference only for broad layout inspiration.
+**Medicine Buddy** is an AI-powered medicine information platform designed to help users understand medicines, explore their ingredients, review relevant precautions, and ask medicine-related questions.
 
-## What this build does
+The application combines a SvelteKit frontend, FastAPI backend, PostgreSQL database, evidence retrieval, and conversational AI to provide accessible, source-grounded medicine information.
 
-- Search a medicine by brand or generic name.
-- Upload up to four packaging photos (front/back/side) and run OCR only after clicking **Scan selected photos**.
-- Correct the OCR text manually before searching.
-- Search live sources through Tavily (free plan) and supplementary public US label sources (openFDA and DailyMed).
-- Extract possible composition passages from retrieved source-page text. The user must confirm the composition against the actual pack before ingredient research.
-- Search each user-confirmed ingredient separately and show source excerpts with links.
-- Provide a basic condition/allergy text screen only against retrieved ingredient excerpts. It never declares a medicine safe.
-- Provide an evidence-retrieval Q&A. It returns relevant source passages and does not invent a generative answer when evidence is missing.
-- Show the retrieval steps and source types for viva explanation.
+## Features
 
-## Important scope and honesty
+### 1. Medicine Search
+- Search for medicines using their brand or generic name.
+- Retrieve medicine information from the connected database.
+- Display available medicine details and relevant source references.
+- Support medicine identification using uploaded packaging images and OCR.
+- Allow users to review and correct extracted text before searching.
 
-1. There is no hardcoded medicine catalogue or sample medicine content.
-2. The app does **not** promise coverage of every medicine. India's ABDM Drug Registry is a major source, but its open API access and onboarding requirements must be confirmed before integrating it as a production source. This build does not pretend to have authenticated registry access.
-3. Tavily is a search/discovery layer, not a medical authority. The app ranks government/regulator and recognised health sources above general websites, but source snippets can still be incomplete. Verify the exact brand, strength, manufacturer and dosage form.
-4. openFDA and DailyMed are US label sources. They are supplementary references and are clearly labelled as not India-specific.
-5. No paid LLM is included. The ingredient highlights and Q&A path are extractive and source-grounded, not a free-form LLM. Quick highlights select sentences from retrieved source snippets; they are not rewritten by an LLM. This avoids surprise costs and reduces unsupported generated medical claims. A true generative model can be added later only if a genuinely no-cost deployment option is confirmed.
-6. No database is required in this version. A small in-memory cache reduces repeat API calls while a server instance stays warm. It resets on cold starts. Neon is deliberately omitted because it is not needed for the first deploy and can introduce cold-start delays and another account configuration.
-7. Condition/allergy entries are used only for the current request; there is no login, profile or persistent health-data database. Packaging images are processed in the browser and are not sent to the backend.
-8. This is an educational prototype, not a clinically validated medical device or a substitute for a pharmacist/doctor.
+### 2. Ingredient Information
+- Identify the ingredients associated with a medicine.
+- Display information about what an ingredient is used for.
+- Explain its general function and how it works.
+- Provide relevant information and supporting source references.
 
-## Requirements
+### 3. Medicine Analysis
+- Analyse available medicine information and ingredient evidence.
+- Review user-provided health conditions and allergies against available evidence.
+- Highlight relevant precautions and potential concerns.
+- Display the evidence used to produce the analysis.
 
-- Node.js 20.19+ or 22.12+
-- Python 3.10 or newer (Python 3.11 is a good choice)
+### 4. Conversational AI Assistant
+- Ask questions about a medicine or its ingredients.
+- Receive conversational responses using retrieved information.
+- Ask follow-up questions using the conversation context.
+- View relevant source references where available.
+- Acknowledge when the available evidence is insufficient.
+
+The conversational assistant and medicine analysis are separate features with different purposes.
+
+### 5. Evidence-Based Retrieval
+- Retrieve relevant information from the connected medicine database and external sources.
+- Use search and retrieval to identify supporting information.
+- Present source references to help users verify the information.
+- Avoid presenting unsupported information as established medical facts.
+
+## Technology Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | SvelteKit |
+| Frontend styling | CSS |
+| Backend | Python, FastAPI |
+| Database | PostgreSQL (Neon) |
+| AI agent | LangChain `create_agent` |
+| LLM providers | Groq and Google Gemini |
+| Web search | Tavily |
+| OCR | Tesseract.js |
+| Deployment | Vercel |
+| Version control | Git and GitHub |
+
+## System Architecture
+
+Medicine Buddy follows a frontend-backend architecture.
+
+1. **Frontend:** The SvelteKit application provides the user interface for medicine searches, image uploads, analysis, and conversational questions.
+2. **Backend:** FastAPI handles API requests, medicine lookup, evidence retrieval, analysis, and agent interactions.
+3. **Database:** PostgreSQL stores structured medicine and ingredient information.
+4. **Retrieval layer:** Relevant information is retrieved from available database records and external sources.
+5. **AI agent:** LangChain connects the conversational assistant to its evidence-retrieval tools and configured language model providers.
+6. **Response:** The backend returns the retrieved information and generated response to the frontend for display.
+
+## Project Structure
+
+```text
+medicine-buddy/
+|
+|-- backend/
+|   |-- app/
+|   |   |-- main.py
+|   |   |-- agent.py
+|   |
+|   |-- data/
+|   |-- database.py
+|   |-- requirements.txt
+|   |-- check_backend.py
+|   |-- clean_dataset.py
+|   |-- test_agent.py
+|
+|-- src/
+|   |-- lib/
+|   |   |-- api.js
+|   |
+|   |-- routes/
+|   |   |-- +page.svelte
+|   |   |-- +layout.svelte
+|   |
+|   |-- app.css
+|   |-- app.html
+|
+|-- index.py
+|-- package.json
+|-- svelte.config.js
+|-- vite.config.js
+|-- vercel.json
+|-- README.md
+```
+
+## Installation and Setup
+
+### Prerequisites
+
+- Python 3.10 or newer
+- Node.js
+- npm
+- Git
 - VS Code
-- Internet connection for live medicine/source search and the first OCR engine download
+- Internet connection
 
-## 1. Open the project
+### 1. Clone the Repository
 
-1. Extract `Medicine_Buddy.zip`.
-2. Open the extracted `medicine-buddy` folder in VS Code.
-3. Open **Terminal → New Terminal**.
+```bash
+git clone https://github.com/sakshiSE/medicine_buddy.git
+cd medicine_buddy
+```
 
-## 2. Set up the Python backend (Terminal 1)
+### 2. Set Up the Backend
 
-Windows PowerShell:
+Open a terminal and navigate to the backend directory:
+
+```powershell
+cd backend
+```
+
+Create and activate a virtual environment:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
 ```
 
-If PowerShell blocks activation, run this once in that terminal:
+Install the Python dependencies:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-Mac/Linux:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 ```
 
-### Add the free search key
+Configure the required environment variables using the environment configuration expected by the backend.
 
-1. Create an account at <https://app.tavily.com/>.
-2. Create/copy an API key from its dashboard.
-3. Open the root `.env` file and paste it after `TAVILY_API_KEY=`.
-4. Do **not** enable pay-as-you-go or add a paid plan. The free Researcher plan currently lists 1,000 credits/month and says requests stop when the allowance is exhausted unless pay-as-you-go is enabled. Check the current dashboard terms before using it.
-5. Each Tavily basic search costs 1 credit. A lookup uses one product search, one separate search per confirmed ingredient, and one extra search for combination rationale when there are multiple ingredients. The backend reuses product results from its warm-instance cache for six hours where possible. The free allowance is not unlimited; a cold start may cause the product search to run again.
+### 3. Configure Environment Variables
 
-Example:
+The application uses the following environment variables:
 
 ```env
-TAVILY_API_KEY=tvly-your-own-key-here
+DATABASE_URL=your_database_connection_string
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+TAVILY_API_KEY=your_tavily_api_key
 ```
 
-Keep `.env` private. Never paste your key into frontend code or commit it to GitHub.
+Add the actual values through your local environment configuration and Vercel environment settings.
 
-Start the backend:
+**Important:** Never commit API keys, database credentials, or private environment files to GitHub.
+
+### 4. Start the Backend
+
+Run this command from the `backend` directory:
 
 ```powershell
-uvicorn backend.app.main:app --reload --port 8000
+py -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Check <http://127.0.0.1:8000/health>. You should see JSON with `"ok": true`.
+The backend will be available at:
 
-## 3. Set up the SvelteKit website (Terminal 2)
+```text
+http://127.0.0.1:8000
+```
 
-Open a second VS Code terminal in the project root:
+Check the API health endpoint:
+
+```text
+http://127.0.0.1:8000/api/health
+```
+
+If the local backend exposes the health endpoint without the `/api` prefix, use the route configured in `main.py`.
+
+### 5. Set Up the Frontend
+
+Open a second terminal in the project root:
 
 ```powershell
 npm install
+```
+
+Start the SvelteKit development server:
+
+```powershell
 npm run dev
 ```
 
-Open the local URL shown by Vite, normally <http://localhost:5173>.
-
-The Vite development server forwards `/api/*` requests to the Python backend at `http://127.0.0.1:8000`.
-
-## 4. Use the website
-
-1. Enter a medicine name, preferably including strength and manufacturer, or upload up to four photos.
-2. For photos, click **Scan selected photos**. The OCR engine is imported and downloaded only at that moment. The first scan can take longer; later scans reuse the worker while the page remains open. OCR is English-first and works best with sharp, well-lit PNG/JPG/WEBP images (up to 5 MB each).
-3. Check and correct the OCR text. OCR is not product identification.
-4. Search the medicine.
-5. Review the identity status and sources. Do not assume a possible match is the exact product.
-6. Confirm the composition from the actual pack. Select a source candidate only after checking it, or type the composition yourself.
-7. Click **Research these ingredients**. Each confirmed ingredient is searched separately.
-8. Review the source excerpts, precautions and evidence-based Q&A.
-
-## 5. Deploy to Vercel
-
-The SvelteKit frontend is pre-rendered to static files and copied into `public/`, which Vercel serves through its CDN. The Python FastAPI app handles only the `/api/*` endpoints. Both deploy from one repository, so there is no separate backend host that could sleep.
-
-1. Push the extracted project folder to a **private** GitHub repository (do not include `.env`, `.venv` or `node_modules`).
-2. Sign in to <https://vercel.com/> and import that repository.
-3. Keep the project root as `./`.
-4. Keep the auto-detected **FastAPI** framework preset. The `vercel.json` file runs `npm install && npm run build`. The build script copies SvelteKit's `build/` output into `public/`; Vercel serves those static files from its CDN, while FastAPI handles API requests. Leave Output Directory blank.
-5. In Vercel → Project → Settings → Environment Variables, add:
-   - Name: `TAVILY_API_KEY`
-   - Value: your Tavily key
-   - Environments: Production, Preview (and Development if desired)
-6. Do not add `DATABASE_URL`; this version does not need Neon.
-7. Deploy. Test `https://YOUR-APP.vercel.app/api/health` first, then open the home page and test medicine lookup.
-
-Vercel announced Python as a generally available runtime on 15 October 2026. Function duration, bandwidth and build usage are still subject to the plan limits. If deployment fails, inspect the Vercel build log and current FastAPI runtime documentation before changing dependencies.
-
-## 6. Quality checks before submission
-
-From the project root:
-
-```powershell
-npm run check
-npm run build
-```
-
-In a terminal with the virtual environment activated:
-
-```powershell
-python -m compileall backend index.py
-python backend/check_backend.py
-```
-
-Also test manually:
-
-- Home page opens without downloading OCR.
-- No Tavily key: the website still opens and reports limited live discovery.
-- Invalid/unknown medicine: no invented composition appears.
-- Ambiguous medicine: the identity status remains a candidate/unverified state.
-- Composition is not researched until the user confirms it.
-- Multiple images are accepted and OCR progress is visible.
-- OCR failure does not prevent manual name entry.
-- Tavily rate limit or unavailable source does not crash the website.
-- Allergy/condition screen never returns a definitive safe verdict.
-- Q&A says it lacks evidence when no matching source passage is found.
-
-## Folder structure
+Open the local URL displayed by the terminal, normally:
 
 ```text
-medicine-buddy/
-├── index.py                  # Vercel FastAPI entry point
-├── scripts/publish-static.mjs # Copies the static site into Vercel public/
-├── public/ (generated during build; served by Vercel CDN)
-├── backend/
-│   ├── app/
-│   │   └── main.py           # FastAPI, search, source ranking, retrieval
-│   └── check_backend.py      # offline backend checks
-├── src/
-│   ├── lib/api.js            # frontend API client
-│   ├── routes/+layout.svelte
-│   ├── routes/+page.svelte   # website and interactions
-│   ├── app.css               # design system
-│   └── app.html
-├── .env.example
-├── package.json
-├── requirements.txt
-├── svelte.config.js          # Static SvelteKit build
-├── vercel.json
-└── vite.config.js
+http://localhost:5173
 ```
+
+The frontend communicates with the backend through the configured API proxy.
+
+## Deployment
+
+The frontend and backend are deployed together through a single Vercel project connected to the GitHub repository.
+
+Deployment configuration is maintained in the project's Vercel configuration and build files.
+
+To deploy:
+
+1. Push the latest project changes to the connected GitHub repository.
+2. Open the project in Vercel.
+3. Configure the required environment variables in the Vercel project settings.
+4. Trigger a deployment.
+5. Verify the deployed website and API health endpoint.
+6. Test medicine search, analysis, and conversational chat after deployment.
+
+The deployment must use the existing project build configuration. Do not create a separate backend deployment unless the architecture is deliberately changed.
+
+## Safety and Limitations
+
+- Medicine Buddy is an educational information platform, not a clinically validated medical device.
+- It does not diagnose diseases or prescribe medicines.
+- It does not replace advice from a qualified doctor or pharmacist.
+- Medicine identification results should be checked against the actual packaging.
+- OCR can make mistakes, so extracted text must be reviewed.
+- Ingredient and precaution information depends on the available sources and their completeness.
+- The absence of a warning in the retrieved information does not mean that a medicine is safe.
+- AI-generated responses may be incomplete or incorrect. Important medical decisions should always be verified with a healthcare professional.
+
+## Future Improvements
+
+- Expand medicine and ingredient database coverage.
+- Improve medicine identification from packaging images.
+- Add more authoritative and region-specific medical references.
+- Improve retrieval accuracy and source verification.
+- Enhance conversational context handling.
+- Add further validation and testing.
+
+## Author
+
+**Medicine Buddy**  
+An academic project developed as part of the MSc Artificial Intelligence programme.
+
+**Repository:** https://github.com/sakshiSE/medicine_buddy
