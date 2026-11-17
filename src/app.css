@@ -6,3 +6,912 @@
 .evidence-level{font-size:8px;color:#6d947b;background:#eef7f0;border-radius:6px;padding:6px 8px;display:inline-block;margin-bottom:10px}.quick-highlights{display:grid;gap:8px}.quick-highlights>div{background:#f7fbf8;border:1px solid #e8f0ea;border-radius:9px;padding:10px}.quick-highlights b{font-size:9px;color:#567762}.quick-highlights p{font-size:9px;line-height:1.55;color:#82958a;margin:6px 0 0}.quick-highlights a{font-size:8px;color:#4c9471;font-weight:800;white-space:nowrap}.quick-highlights .not-found{color:#a0aaa3;font-style:italic}.full-sources{display:block;border-top:1px solid #e6eee8;margin-top:12px;padding-top:10px}.full-sources summary{font-size:9px}
 .status-dot.limited{background:#d3a65d;box-shadow:0 0 0 4px #fbf2df}
 .product-purpose{background:#f6faf7;border:1px solid #e5efe8;border-radius:10px;padding:12px;margin:8px 0 14px}.product-purpose>b{font-size:9px;color:#557b63}.product-purpose p{font-size:9px;line-height:1.6;color:#7c9084;margin:7px 0 0}.product-purpose a{color:#4a936e;font-weight:800;white-space:nowrap}.product-purpose small{display:block;font-size:8px;line-height:1.5;color:#a18c65;margin-top:8px}
+
+
+/* ==========================================
+   MEDICINE BUDDY - VISUAL ENHANCEMENT LAYER
+   Existing functionality and colours preserved
+========================================== */
+
+/* Overall visual polish */
+html {
+  scroll-padding-top: 95px;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 8% 8%, rgba(213, 240, 224, .8), transparent 35%),
+    radial-gradient(ellipse at 92% 35%, rgba(226, 239, 233, .5), transparent 30%),
+    #f5faf7;
+}
+
+.app-shell {
+  overflow: hidden;
+}
+
+/* Premium navigation */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(248, 252, 249, .88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: box-shadow .3s ease;
+}
+
+.brand {
+  transition: transform .25s ease;
+}
+
+.brand:hover {
+  transform: translateY(-2px);
+}
+
+.brand-mark {
+  transition: transform .35s ease;
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(8deg) scale(1.08);
+}
+
+.topnav a {
+  position: relative;
+  transition: color .25s ease;
+}
+
+.topnav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  width: 0;
+  height: 2px;
+  border-radius: 5px;
+  background: var(--green);
+  transition: width .25s ease;
+}
+
+.topnav a:hover::after {
+  width: 100%;
+}
+
+/* Homepage entrance */
+.hero-copy {
+  animation: mbSlideUp .75s ease both;
+}
+
+.hero-art {
+  animation: mbFadeIn 1s ease both;
+}
+
+.hero-copy h1 {
+  text-wrap: balance;
+}
+
+.hero-subtitle {
+  max-width: 500px;
+}
+
+/* Floating medicine illustration */
+.art-orbit {
+  animation: mbOrbit 24s linear infinite;
+}
+
+.orbit-two {
+  animation-direction: reverse;
+  animation-duration: 32s;
+}
+
+.art-card-front {
+  animation: mbFloat 5s ease-in-out infinite;
+  transition: box-shadow .3s ease;
+}
+
+.art-card-back {
+  animation: mbFloatBack 6s ease-in-out infinite;
+}
+
+.art-float {
+  animation: mbFloat 4.5s ease-in-out infinite;
+}
+
+.float-bottom {
+  animation-delay: 1.2s;
+}
+
+.spark-one {
+  animation: mbSpark 3s ease-in-out infinite;
+}
+
+.spark-two {
+  animation: mbSpark 3.5s ease-in-out infinite reverse;
+}
+
+/* Main workspace */
+.workspace {
+  position: relative;
+}
+
+.section-heading {
+  margin-bottom: 27px;
+}
+
+.section-heading h2 {
+  letter-spacing: -1.5px;
+}
+
+.input-card,
+.info-card,
+.result-card {
+  transition:
+    transform .3s ease,
+    box-shadow .3s ease,
+    border-color .3s ease;
+}
+
+.search-card {
+  box-shadow: 0 15px 45px rgba(28, 76, 61, .07);
+}
+
+.search-card:hover {
+  box-shadow: 0 22px 55px rgba(28, 76, 61, .11);
+}
+
+.info-card:hover,
+.result-card:hover {
+  border-color: #d2e7d9;
+  box-shadow: 0 20px 48px rgba(28, 76, 61, .09);
+}
+
+/* Search input */
+.search-control {
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+
+.search-control:focus-within {
+  border-color: #6fae8b;
+  box-shadow: 0 0 0 4px rgba(91, 164, 119, .12);
+}
+
+.search-button,
+.primary-action,
+.scan-button,
+.ask-input-row button,
+.outline-button {
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease,
+    background .25s ease;
+}
+
+.search-button:hover,
+.primary-action:hover,
+.scan-button:hover,
+.ask-input-row button:hover,
+.outline-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(38, 107, 81, .15);
+}
+
+/* Upload area */
+.upload-zone {
+  transition: background .25s ease, border-color .25s ease;
+}
+
+.upload-zone:hover {
+  background: #eff8f2;
+  border-color: #79b795;
+}
+
+.upload-icon {
+  transition: transform .3s ease;
+}
+
+.upload-zone:hover .upload-icon {
+  transform: rotate(90deg);
+}
+
+.preview-item {
+  animation: mbFadeIn .35s ease both;
+}
+
+.preview-item img {
+  transition: transform .25s ease;
+}
+
+.preview-item:hover img {
+  transform: scale(1.08);
+}
+
+/* Scanner progress */
+.progress-fill {
+  background: linear-gradient(90deg, #55a67f, #91cbaa);
+  box-shadow: 0 0 9px rgba(85, 166, 127, .25);
+}
+
+.scan-button:active,
+.search-button:active,
+.primary-action:active {
+  transform: scale(.98);
+}
+
+/* Result report */
+.results-section {
+  animation: mbSlideUp .5s ease both;
+}
+
+.identity-banner {
+  transition: transform .25s ease;
+}
+
+.identity-banner:hover {
+  transform: translateY(-2px);
+}
+
+.result-tabs button {
+  transition: color .25s ease, background .25s ease;
+  border-radius: 8px 8px 0 0;
+}
+
+.result-tabs button:hover {
+  background: #f0f8f2;
+}
+
+.result-grid,
+.ingredient-grid {
+  align-items: start;
+}
+
+.candidate-line {
+  transition: background .25s ease, border-color .25s ease;
+}
+
+.candidate-line:hover {
+  background: #edf7f0;
+  border-color: #a9d2b8;
+}
+
+.ingredient-card {
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.ingredient-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(28, 76, 61, .07);
+}
+
+.ingredient-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 27px;
+  border-radius: 8px;
+  background: #e8f5eb;
+}
+
+.quick-highlights > div {
+  transition: background .25s ease, border-color .25s ease;
+}
+
+.quick-highlights > div:hover {
+  background: #eef8f1;
+  border-color: #d3e9d9;
+}
+
+/* Source cards */
+.source-item {
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.source-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(28, 76, 61, .07);
+}
+
+/* AI assistant */
+.ask-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.ask-card::before {
+  content: "✳";
+  position: absolute;
+  right: 22px;
+  top: 8px;
+  font-size: 95px;
+  color: rgba(79, 151, 111, .055);
+  pointer-events: none;
+}
+
+.ask-icon {
+  animation: mbSoftPulse 3s ease-in-out infinite;
+}
+
+.chat-answer {
+  animation: mbSlideUp .4s ease both;
+}
+
+/* Loading animation */
+.loading-panel {
+  animation: mbFadeIn .4s ease both;
+}
+
+.loader-orbit {
+  border-right-color: #9acdab;
+}
+
+/* Safety section */
+.safety-section {
+  position: relative;
+}
+
+.safety-icon {
+  transition: transform .3s ease, background .3s ease;
+}
+
+.safety-section:hover .safety-icon {
+  transform: translateY(-4px) rotate(-6deg);
+  background: #d5ecde;
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid rgba(220, 235, 225, .7);
+  padding-top: 23px;
+}
+
+/* Consistent keyboard accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(74, 151, 110, .35);
+  outline-offset: 3px;
+}
+
+/* Animations */
+@keyframes mbSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mbFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mbFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes mbFloatBack {
+  0%, 100% {
+    transform: rotate(12deg) translate(35px, 5px);
+  }
+  50% {
+    transform: rotate(12deg) translate(35px, -5px);
+  }
+}
+
+@keyframes mbOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mbSpark {
+  0%, 100% {
+    opacity: .55;
+    transform: scale(.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes mbSoftPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(82, 151, 117, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(82, 151, 117, .08);
+  }
+}
+
+/* Mobile refinements */
+@media (max-width: 680px) {
+  .topbar {
+    position: relative;
+  }
+
+  .hero-art {
+    overflow: visible;
+  }
+
+  .art-float {
+    padding: 9px 10px;
+  }
+
+  .float-top {
+    left: 0;
+  }
+
+  .float-bottom {
+    right: 0;
+  }
+
+  .search-card,
+  .result-card {
+    border-radius: 15px;
+  }
+
+  .ingredient-card:hover {
+    transform: none;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy,
+  .hero-art,
+  .art-orbit,
+  .art-card-front,
+  .art-card-back,
+  .art-float,
+  .art-spark,
+  .ask-icon {
+    animation: none !important;
+  }
+}
+
+
+/* ==========================================
+   MEDICINE BUDDY - PREMIUM UI REDESIGN
+   VISUAL ONLY - EXISTING LOGIC PRESERVED
+========================================== */
+
+/* Global appearance */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 8% 5%, rgba(213,240,224,.8), transparent 35%),
+    radial-gradient(ellipse at 95% 30%, rgba(226,239,233,.6), transparent 32%),
+    #f5faf7;
+}
+
+.app-shell {
+  max-width: 1500px;
+}
+
+/* Navigation */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(248,252,249,.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(210,229,219,.8);
+  box-shadow: 0 5px 25px rgba(28,76,61,.035);
+}
+
+.brand {
+  transition: transform .25s ease;
+}
+
+.brand:hover {
+  transform: translateY(-2px);
+}
+
+.topnav a {
+  transition: color .25s ease;
+}
+
+.topnav a:hover {
+  color: var(--green);
+}
+
+/* Hero section */
+.hero-section {
+  min-height: 510px;
+  padding-top: 65px;
+  padding-bottom: 75px;
+}
+
+.hero-copy {
+  animation: mbPremiumEntrance .7s ease both;
+}
+
+.hero-copy h1 {
+  font-size: clamp(46px, 5.4vw, 72px);
+  line-height: 1.08;
+  letter-spacing: -3.8px;
+}
+
+.hero-copy h1 em {
+  color: #4e9b7a;
+}
+
+.hero-subtitle {
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.hero-art {
+  animation: mbPremiumFade .9s ease both;
+}
+
+.art-card-front {
+  box-shadow: 0 28px 70px rgba(29,83,65,.17);
+}
+
+.art-float {
+  box-shadow: 0 15px 38px rgba(30,81,64,.12);
+  backdrop-filter: blur(10px);
+}
+
+/* Workspace */
+.workspace {
+  padding-top: 25px;
+}
+
+.section-heading {
+  margin-bottom: 30px;
+}
+
+.section-heading h2,
+.results-topline h2 {
+  letter-spacing: -1.5px;
+}
+
+.input-card,
+.info-card,
+.result-card {
+  border-radius: 20px;
+  box-shadow: 0 14px 42px rgba(28,76,61,.065);
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease,
+    border-color .25s ease;
+}
+
+.input-card:hover,
+.info-card:hover,
+.result-card:hover {
+  border-color: #d0e6d7;
+  box-shadow: 0 20px 50px rgba(28,76,61,.10);
+}
+
+.search-card {
+  padding: 30px;
+}
+
+/* Search input */
+.search-control {
+  border-radius: 14px;
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+
+.search-control:focus-within {
+  border-color: #70ad89;
+  box-shadow: 0 0 0 4px rgba(91,164,119,.12);
+}
+
+.search-button,
+.primary-action,
+.scan-button,
+.ask-input-row button,
+.outline-button {
+  transition: transform .2s ease, box-shadow .2s ease,
+    background .2s ease;
+}
+
+.search-button:hover,
+.primary-action:hover,
+.scan-button:hover,
+.ask-input-row button:hover,
+.outline-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(38,107,81,.16);
+}
+
+/* Upload area */
+.upload-zone {
+  border-radius: 15px;
+  transition: background .25s ease, border-color .25s ease;
+}
+
+.upload-zone:hover {
+  background: #eff8f2;
+  border-color: #79b795;
+}
+
+.upload-icon {
+  transition: transform .3s ease;
+}
+
+.upload-zone:hover .upload-icon {
+  transform: rotate(90deg);
+}
+
+.preview-item {
+  animation: mbPremiumFade .3s ease both;
+}
+
+/* Information cards */
+.how-card {
+  background: linear-gradient(145deg,#e5f4e9,#f9fcf9);
+}
+
+.scope-card {
+  background: #fff;
+}
+
+.info-card h3 {
+  line-height: 1.4;
+}
+
+/* Loading state */
+.loading-panel {
+  border-radius: 20px;
+  animation: mbPremiumFade .4s ease both;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg,#55a67f,#91cbaa);
+}
+
+/* Report section */
+.results-section {
+  animation: mbPremiumEntrance .5s ease both;
+}
+
+.identity-banner {
+  border-radius: 15px;
+}
+
+.result-tabs {
+  gap: 10px;
+}
+
+.result-tabs button {
+  border-radius: 10px 10px 0 0;
+  transition: background .2s ease, color .2s ease;
+}
+
+.result-tabs button:hover {
+  background: #edf7f0;
+}
+
+.result-tabs button.tab-active {
+  color: #267b65;
+}
+
+/* Result cards */
+.result-card {
+  padding: 27px;
+}
+
+.result-card-icon {
+  border-radius: 12px;
+}
+
+.candidate-line {
+  border-radius: 12px;
+  transition: background .2s ease, border-color .2s ease;
+}
+
+.candidate-line:hover {
+  background: #edf7f0;
+  border-color: #a9d2b8;
+}
+
+/* Ingredient cards */
+.ingredient-card {
+  border-radius: 15px;
+  padding: 19px;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.ingredient-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 13px 28px rgba(28,76,61,.08);
+}
+
+.ingredient-card h4 {
+  font-size: 16px;
+}
+
+.evidence-level {
+  border-radius: 8px;
+}
+
+.quick-highlights > div {
+  border-radius: 11px;
+  transition: background .2s ease, border-color .2s ease;
+}
+
+.quick-highlights > div:hover {
+  background: #eef8f1;
+  border-color: #d3e9d9;
+}
+
+/* Source cards */
+.source-item {
+  border-radius: 12px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.source-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 22px rgba(28,76,61,.08);
+}
+
+/* Plain-language ingredient research card styling */
+.quick-highlights {
+  gap: 10px;
+}
+
+.quick-highlights > div {
+  padding: 12px;
+  background: #f7fbf8;
+  border: 1px solid #e5efe8;
+}
+
+.quick-highlights > div:first-child {
+  border-left: 3px solid #65a981;
+}
+
+/* AI chat */
+.ask-card {
+  border-radius: 19px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ask-card::before {
+  content: "✳";
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 95px;
+  color: rgba(79,151,111,.055);
+  pointer-events: none;
+}
+
+.ask-icon {
+  animation: mbSoftPulse 3s ease-in-out infinite;
+}
+
+.ask-input-row {
+  border-radius: 13px;
+}
+
+.chat-answer {
+  border-radius: 13px;
+  animation: mbPremiumEntrance .35s ease both;
+}
+
+/* Safety and footer */
+.safety-section {
+  border-color: #dcebe2;
+}
+
+.safety-icon {
+  transition: transform .25s ease;
+}
+
+.safety-section:hover .safety-icon {
+  transform: translateY(-4px) rotate(-5deg);
+}
+
+.footer {
+  border-top: 1px solid #dcebe2;
+  padding-top: 25px;
+}
+
+/* Animations */
+@keyframes mbPremiumEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mbPremiumFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mbSoftPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(82,151,117,0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(82,151,117,.08);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 900px) {
+  .hero-section {
+    gap: 15px;
+  }
+
+  .hero-copy h1 {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar {
+    position: relative;
+  }
+
+  .hero-section {
+    padding-top: 42px;
+    padding-bottom: 35px;
+  }
+
+  .hero-copy h1 {
+    font-size: 46px;
+    letter-spacing: -2.5px;
+  }
+
+  .search-card,
+  .result-card {
+    padding: 19px;
+    border-radius: 16px;
+  }
+
+  .ingredient-card:hover {
+    transform: none;
+  }
+
+  .footer {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

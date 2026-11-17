@@ -23,14 +23,22 @@ async function apiRequest(path, data = null) {
     return response.json();
 }
 
+// Check backend connection
 export function checkHealth() {
     return apiRequest('/health');
 }
 
+// Search medicine and retrieve ingredient information
 export function lookupMedicine(data) {
     return apiRequest('/lookup', data);
 }
 
+// Existing conversational AI chat
 export function askMedicine(data) {
     return apiRequest('/chat', data);
+}
+
+// New independent LangChain Agent analysis
+export function analyzeMedicine(data) {
+    return apiRequest('/agent/analyze', data);
 }
