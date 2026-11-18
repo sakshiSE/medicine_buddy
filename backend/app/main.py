@@ -2382,5 +2382,11 @@ async def analyze_with_agent(
         ) from exc
 
 
-FRONTEND_DIR = Path(__file__).resolve().parents[2] / "build"
-app.frontend("/", directory=FRONTEND_DIR)
+
+FRONTEND_DIR = Path(__file__).resolve().parents[2] / "public"
+
+app.frontend(
+    "/",
+    directory=str(FRONTEND_DIR),
+    check_dir=False,
+)
