@@ -2383,7 +2383,7 @@ async def analyze_with_agent(
 
 
 
-FRONTEND_DIR = Path(__file__).resolve().parents[2] / "public"
+FRONTEND_DIR = Path(__file__).resolve().parents[2] / "build"
 
 app.frontend(
     "/",
