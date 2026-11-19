@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import time
@@ -1016,7 +1017,16 @@ def _split_ingredients(
 
 def _evidence_highlights(
     sources: list[dict[str, Any]],
+    knowledge: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """
+    Prepare short, readable ingredient highlights from retrieved evidence.
+
+    Structured Neon knowledge is preferred when available. If it is not
+    available, relevant complete sentences are selected from the retrieved
+    source excerpts. Original source titles and URLs remain attached so the
+    frontend can continue showing the reference links.
+    """
 
     buckets = {
         "what_it_does": (
@@ -1024,10 +1034,13 @@ def _evidence_highlights(
             "use in",
             "indicated for",
             "treat",
+            "treatment",
             "relief",
             "purpose",
             "helps",
             "prevents",
+            "clinical uses",
+            "indications",
         ),
         "how_it_works": (
             "works by",
@@ -1039,6 +1052,7 @@ def _evidence_highlights(
             "reduces",
             "acts on",
             "action",
+            "activity",
         ),
         "precautions": (
             "warning",
@@ -1050,56 +1064,169 @@ def _evidence_highlights(
             "allergy",
             "pregnancy",
             "do not use",
+            "precaution",
         ),
     }
 
-    output = {}
+    output: dict[str, Any] = {
+        "what_it_does": [],
+        "how_it_works": [],
+        "precautions": [],
+    }
+
+    def add_highlight(
+        bucket: str,
+        text: Any,
+        source: dict[str, Any] | None = None,
+    ) -> None:
+        cleaned = _clean(text)
+        if not cleaned:
+            return
+
+        # Remove common field labels while keeping the explanation itself.
+        cleaned = re.sub(
+            r"^(?:clinical uses?|indications? and usage|"
+            r"mechanism of action|precautions?|warnings?|"
+            r"side effects?|contraindications?)\s*:\s*",
+            "",
+            cleaned,
+            flags=re.I,
+        ).strip()
+
+        if len(cleaned) < 25:
+            return
+
+        # Do not show bibliographic metadata or paper-description fragments
+        # as medicine explanations.
+        metadata_patterns = (
+            r"^title\s*:",
+            r"^authors?\s*:",
+            r"^journal\s*:",
+            r"^abstract\s*:",
+            r"^doi\s*:",
+            r"^pmid\s*:",
+            r"^keywords?\s*:",
+            r"^publication",
+            r"^published\s+(?:in|on|by)",
+            r"^received\s+",
+            r"^accepted\s+",
+            r"^copyright\s*",
+            r"^references\s*:",
+            r"^background\s*:",
+            r"^methods?\s*:",
+            r"^results\s*:",
+            r"^conclusions?\s*:",
+        )
+        if any(
+            re.search(pattern, cleaned, flags=re.I)
+            for pattern in metadata_patterns
+        ):
+            return
+
+        # Avoid returning a heading, URL, or a sentence that is mostly
+        # bibliographic identifiers rather than useful explanation.
+        if (
+            cleaned.lower().startswith(("http://", "https://", "doi.org/"))
+            or re.search(r"\b(?:doi|pmid|isbn)\s*[:=]", cleaned, re.I)
+        ):
+            return
+
+        cleaned = cleaned[:650].strip()
+        source = source or {}
+
+        item = {
+            "text": cleaned,
+            "source_title": source.get("title", "Stored ingredient knowledge"),
+            "source_url": source.get("url", ""),
+        }
+
+        normalized = re.sub(r"[^a-z0-9]", "", cleaned.lower())
+        if not any(
+            re.sub(r"[^a-z0-9]", "", existing.get("text", "").lower())
+            == normalized
+            for existing in output[bucket]
+        ):
+            if len(output[bucket]) < 2:
+                output[bucket].append(item)
+
+    # Prefer the dedicated Neon knowledge columns when they contain text.
+    # This avoids extracting research-paper metadata from the source excerpts.
+    knowledge = knowledge if isinstance(knowledge, dict) else {}
+    knowledge_fields = {
+        "what_it_does": ("clinical_uses",),
+        "how_it_works": ("mechanism_of_action",),
+        "precautions": (
+            "precautions",
+            "side_effects",
+            "contraindications",
+        ),
+    }
+
+    preferred_source = next(
+        (
+            source for source in sources
+            if isinstance(source, dict)
+            and str(source.get("url", "")).startswith("https://")
+        ),
+        {},
+    )
+
+    for bucket, fields in knowledge_fields.items():
+        for field in fields:
+            value = knowledge.get(field)
+            if not value:
+                continue
+
+            # Split long stored text into readable statements, rather than
+            # placing a complete database paragraph into a single card.
+            statements = [
+                part.strip()
+                for part in re.split(r"(?<=[.!?])\s+|\n+", str(value))
+                if part.strip()
+            ]
+
+            for statement in statements:
+                add_highlight(bucket, statement, preferred_source)
+
+            if len(output[bucket]) >= 2:
+                break
+
+    # Use retrieved source sentences only for sections not populated by
+    # structured Neon knowledge.
     all_sentences = []
 
     for source in sources:
-        text = source.get("content", "")
+        if not isinstance(source, dict):
+            continue
+
+        content = _clean(source.get("content", ""))
+        if not content:
+            continue
 
         sentences = [
-            sentence.strip()
+            sentence.strip(" \t\r\n-•")
             for sentence in re.split(
-                r"(?<=[.!?])\s+|\s+\|\s+",
-                text,
+                r"(?<=[.!?])\s+|\s+\|\s+|\n+",
+                content,
             )
             if len(sentence.strip()) > 24
         ]
 
         for sentence in sentences:
-            all_sentences.append(
-                (sentence[:650], source)
-            )
+            all_sentences.append((sentence, source))
 
-    for key, terms in buckets.items():
-        selected = []
-        seen = set()
+    for bucket, terms in buckets.items():
+        if len(output[bucket]) >= 2:
+            continue
 
         for sentence, source in all_sentences:
-            lowered = sentence.lower()
+            if not any(term in sentence.lower() for term in terms):
+                continue
 
-            if any(term in lowered for term in terms):
-                normalized = re.sub(
-                    r"[^a-z0-9]",
-                    "",
-                    lowered,
-                )
+            add_highlight(bucket, sentence, source)
 
-                if normalized not in seen:
-                    seen.add(normalized)
-
-                    selected.append({
-                        "text": sentence,
-                        "source_title": source.get("title", "Source"),
-                        "source_url": source.get("url", ""),
-                    })
-
-            if len(selected) == 2:
+            if len(output[bucket]) >= 2:
                 break
-
-        output[key] = selected
 
     strong_domains = {
         re.sub(
@@ -1108,7 +1235,9 @@ def _evidence_highlights(
             source.get("url", ""),
         ).split("/")[0]
         for source in sources
-        if source.get("source_rank", 0) >= 4
+        if isinstance(source, dict)
+        and source.get("source_rank", 0) >= 4
+        and source.get("url")
     }
 
     if len(strong_domains) >= 2:
@@ -1123,6 +1252,189 @@ def _evidence_highlights(
     output["evidence_level"] = confidence
 
     return output
+
+async def _generate_ingredient_highlights(
+    ingredient: str,
+    sources: list[dict[str, Any]],
+    knowledge: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Use the configured LLM to turn retrieved ingredient evidence into card text.
+
+    Every generated statement must identify the source index it used. The
+    returned card shape stays compatible with the existing Svelte frontend.
+    If the LLM is unavailable or returns invalid output, use the existing
+    deterministic evidence extraction instead.
+    """
+    fallback = _evidence_highlights(sources, knowledge)
+
+    evidence_items: list[dict[str, str]] = []
+    for source in (sources or [])[:6]:
+        if not isinstance(source, dict):
+            continue
+        content = _clean(source.get("content", ""))
+        title = _clean(source.get("title", "Source"))
+        url = _clean(source.get("url", ""))
+        if content:
+            evidence_items.append({
+                "title": title[:220],
+                "url": url[:500],
+                "content": content[:3500],
+                "source_type": _clean(source.get("source_type", "")),
+            })
+
+    # Include database knowledge as evidence even when the database has no
+    # linked source URL. It is labelled clearly and is not presented as a paper.
+    if isinstance(knowledge, dict):
+        knowledge_fields = (
+            "clinical_uses", "mechanism_of_action", "precautions",
+            "side_effects", "contraindications", "drug_interactions_text",
+        )
+        knowledge_parts = [
+            f"{field.replace('_', ' ').title()}: {_clean(knowledge.get(field))}"
+            for field in knowledge_fields
+            if knowledge.get(field) and _clean(knowledge.get(field))
+        ]
+        if knowledge_parts:
+            evidence_items.append({
+                "title": f"Neon ingredient knowledge: {ingredient}",
+                "url": "",
+                "content": " ".join(knowledge_parts)[:3500],
+                "source_type": "ingredient-linked Neon database knowledge",
+            })
+
+    if not evidence_items:
+        return fallback
+
+    evidence_text = "\n\n".join(
+        f"SOURCE_INDEX: {index}\n"
+        f"SOURCE_TITLE: {item['title']}\n"
+        f"SOURCE_URL: {item['url'] or 'Stored database knowledge; no URL'}\n"
+        f"SOURCE_TEXT: {item['content']}"
+        for index, item in enumerate(evidence_items)
+    )
+
+    system_prompt = """
+You are the evidence-writing component of Medicine Buddy.
+Write concise, plain-language educational explanations for medicine ingredient cards.
+You are NOT diagnosing, prescribing, or deciding whether a medicine is safe.
+
+STRICT EVIDENCE RULES:
+- Use only facts explicitly supported by the supplied source text.
+- First check that each source actually discusses the requested ingredient.
+  Ignore unrelated medicines, generic website navigation, unrelated policy pages,
+  and papers that do not discuss this ingredient.
+- Never transfer facts from one medicine or ingredient to another.
+- Do not invent doses, indications, contraindications, interactions, or statistics.
+- If a card category is not supported by relevant evidence, return an empty list for it.
+- Do not turn absence of a warning in the sources into a claim that something is safe.
+- Paraphrase faithfully; do not copy long passages.
+- Return valid JSON only, without Markdown fences or commentary.
+
+Required JSON shape:
+{
+  "what_it_does": [{"text": "...", "source_indexes": [0]}],
+  "how_it_works": [{"text": "...", "source_indexes": [0]}],
+  "precautions": [{"text": "...", "source_indexes": [0]}]
+}
+Each category may contain at most 2 short items. Each item should be 1-2 clear sentences.
+Every item must cite one or more valid SOURCE_INDEX values that directly support it.
+""".strip()
+
+    user_prompt = (
+        f"INGREDIENT: {ingredient}\n\n"
+        "Prepare the three ingredient-card sections from the relevant evidence below. "
+        "Do not use a source if its content is unrelated to this ingredient. "
+        "If no relevant evidence supports a section, return an empty array for it.\n\n"
+        f"{evidence_text}"
+    )
+
+    raw_answer = ""
+    try:
+        raw_answer = await _call_groq(system_prompt, user_prompt)
+    except Exception as groq_error:
+        print(f"Groq card generation failed for {ingredient}: {groq_error}")
+        try:
+            raw_answer = await _call_gemini(system_prompt, user_prompt)
+        except Exception as gemini_error:
+            print(f"Gemini card generation failed for {ingredient}: {gemini_error}")
+            return fallback
+
+    try:
+        # Be tolerant if a provider wraps JSON in a Markdown code fence.
+        cleaned_answer = raw_answer.strip()
+        cleaned_answer = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned_answer, flags=re.I)
+        parsed = json.loads(cleaned_answer)
+        if not isinstance(parsed, dict):
+            return fallback
+    except (json.JSONDecodeError, TypeError, ValueError):
+        print(f"LLM returned invalid card JSON for {ingredient}")
+        return fallback
+
+    output: dict[str, Any] = {
+        "what_it_does": [],
+        "how_it_works": [],
+        "precautions": [],
+        "evidence_level": fallback.get("evidence_level", "no supporting source found"),
+    }
+
+    for category in ("what_it_does", "how_it_works", "precautions"):
+        items = parsed.get(category, [])
+        if not isinstance(items, list):
+            continue
+
+        for item in items[:2]:
+            if not isinstance(item, dict):
+                continue
+            statement = _clean(item.get("text", ""))
+            indexes = item.get("source_indexes", [])
+            if not statement or not isinstance(indexes, list):
+                continue
+
+            valid_sources = []
+            for index in indexes:
+                if isinstance(index, int) and 0 <= index < len(evidence_items):
+                    source = evidence_items[index]
+                    # Do not attach an unrelated citation merely because the
+                    # model returned an index: require ingredient text in the
+                    # source title or source excerpt.
+                    generic_chemical_terms = {
+                        "acid", "sodium", "calcium", "potassium", "hydrochloride",
+                        "sulfate", "sulphate", "phosphate", "maleate", "acetate",
+                        "hydrate", "trihydrate", "monohydrate",
+                    }
+                    ingredient_terms = [
+                        token for token in re.findall(r"[a-z0-9]+", ingredient.lower())
+                        if len(token) >= 4 and token not in generic_chemical_terms
+                    ]
+                    source_text = (source["title"] + " " + source["content"]).lower()
+                    linked_database_record = (
+                        "ingredient-linked" in source.get("source_type", "").lower()
+                        or "stored ingredient" in source.get("source_type", "").lower()
+                    )
+                    if linked_database_record or (
+                        ingredient_terms and any(term in source_text for term in ingredient_terms)
+                    ):
+                        valid_sources.append(source)
+
+            if not valid_sources:
+                continue
+
+            source = valid_sources[0]
+            output[category].append({
+                "text": statement[:650],
+                "source_title": source["title"],
+                "source_url": source["url"],
+            })
+            if len(output[category]) >= 2:
+                break
+
+    # A valid LLM response with no relevant, citable evidence should produce
+    # empty cards rather than falling back to unrelated raw source sentences.
+    if not any(output[key] for key in ("what_it_does", "how_it_works", "precautions")):
+        output["evidence_level"] = "no relevant supporting source found"
+
+    return output
+
 
 
 # =========================================================
@@ -1804,8 +2116,10 @@ async def lookup(
                 "ingredient_id": result.get("ingredient_id"),
                 "knowledge": result.get("knowledge"),
                 "sources": ingredient_sources,
-                "highlights": _evidence_highlights(
-                    ingredient_sources
+                "highlights": await _generate_ingredient_highlights(
+                    ingredient,
+                    ingredient_sources,
+                    result.get("knowledge"),
                 ),
                 "status": result.get(
                     "status",
