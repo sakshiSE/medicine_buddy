@@ -1,6 +1,11 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
-  import { checkHealth, lookupMedicine, askMedicine } from '$lib/api.js';
+  import {
+  checkHealth,
+  lookupMedicine,
+  askMedicine,
+  analyzeMedicine
+} from '$lib/api.js';
 
   let medicineName = '';
   let selectedFiles = [];
@@ -150,20 +155,67 @@ async function checkPrecautions() {
   busy = true;
   error = '';
 
+  const conditions = splitTags(conditionsText);
+  const allergies = splitTags(allergiesText);
+
   try {
-    result = await lookupMedicine({
+    // Step 1: Retrieve medicine information using the existing lookup.
+    const lookupResult = await lookupMedicine({
       medicine_name: medicineName,
       confirmed_composition: compositionText.trim(),
-      conditions: splitTags(conditionsText),
-      allergies: splitTags(allergiesText)
+      conditions,
+      allergies
     });
 
+    // Preserve the lookup result even if the AI service is unavailable.
+    result = lookupResult;
+
+    // Step 2: Send the retrieved evidence to the LangChain Agent.
+    const agentResult = await analyzeMedicine({
+      medicine_name: medicineName,
+      conditions,
+      allergies,
+      lookup_result: lookupResult
+    });
+
+    // Step 3: Keep the original lookup data and add the agent response.
+    result = {
+      ...lookupResult,
+      agent_analysis: agentResult
+    };
+
     activeTab = 'precautions';
+
   } catch (err) {
-    error = err.message || 'Precaution screening failed. Please try again.';
+    error = err.message || 'Precaution analysis failed. Please try again.';
   } finally {
     busy = false;
   }
+}
+
+// Keep full source text in the API result for research and chat,
+// but show a short, readable excerpt in the interface.
+function sourceExcerpt(value, maxLength = 420) {
+  if (!value) return 'No readable source excerpt is available.';
+
+  const text = String(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*_]{3,}\s*$/gm, ' ')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+[.)]\s+/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/[`*_>#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (text.length <= maxLength) return text;
+
+  const shortened = text.slice(0, maxLength);
+  const lastSpace = shortened.lastIndexOf(' ');
+  return `${shortened.slice(0, lastSpace > maxLength * 0.65 ? lastSpace : maxLength).trim()}…`;
 }
 
 function splitTags(value) {
@@ -398,7 +450,7 @@ function splitTags(value) {
             </div>
             <div class="result-card sources-card"><div class="result-card-head"><div><span class="card-kicker">SOURCE CHECK</span><h3>Where this came from</h3></div><span class="result-card-icon">↗</span></div>
               {#if result.sources?.length}
-                <div class="source-list">{#each result.sources as source}<a class="source-item" href={source.url} target="_blank" rel="noopener noreferrer"><span class="source-type">{source.source_type}</span><b>{source.title}</b><p>{source.content.slice(0, 190)}{source.content.length > 190 ? '…' : ''}</p><span class="source-open">Open source ↗</span></a>{/each}</div>
+                <div class="source-list">{#each result.sources as source}<a class="source-item" href={source.url} target="_blank" rel="noopener noreferrer"><span class="source-type">{source.source_type}</span><b>{source.title}</b><p>{sourceExcerpt(source.content, 190)}</p><span class="source-open">Open source ↗</span></a>{/each}</div>
               {:else}<div class="empty-state"><span>⌕</span><b>No live sources returned.</b><p>Check the search key or try again later. No medicine facts have been filled in from a sample database.</p></div>{/if}
             </div>
           </div>
@@ -512,7 +564,7 @@ function splitTags(value) {
                   <div class="ingredient-evidence">
                     <span>{source.source_type}</span>
                     <b>{source.title}</b>
-                    <p>{source.content}</p>
+                    <p>{sourceExcerpt(source.content)}</p>
 
                     <a
                       href={source.url}
@@ -552,7 +604,7 @@ function splitTags(value) {
   </div>
 
         {:else if activeTab === 'how'}
-          <div class="result-card wide-card"><div class="result-card-head"><div><span class="card-kicker">TRANSPARENT PROCESS</span><h3>How this result was prepared</h3></div><span class="result-card-icon">⌁</span></div><div class="trace-list">{#each result.trace || [] as item, i}<div class="trace-row"><span>{String(i + 1).padStart(2, '0')}</span><p>{item}</p><i>✓</i></div>{/each}</div>{#if result.ingredients?.length > 1}<div class="notice-box"><b>Why these ingredients are combined</b>{#if result.combination_sources?.length}<p>These sources discuss the combination. Read the source passages and check whether they refer to the same formulation and strength.</p>{#each result.combination_sources as source}<div class="ingredient-evidence"><b>{source.title}</b><p>{source.content}</p><a href={source.url} target="_blank" rel="noopener noreferrer">Read reference ↗</a></div>{/each}{:else}<p>No reliable source explaining this exact combination was retrieved. The app will not guess why the ingredients were combined.</p>{/if}</div>{/if}<div class="notice-box"><b>Why we ask you to confirm the composition</b><p>Similar brand names can refer to different strengths, dosage forms or manufacturers. A text match alone cannot prove that the retrieved label belongs to your exact pack.</p></div></div>
+          <div class="result-card wide-card"><div class="result-card-head"><div><span class="card-kicker">TRANSPARENT PROCESS</span><h3>How this result was prepared</h3></div><span class="result-card-icon">⌁</span></div><div class="trace-list">{#each result.trace || [] as item, i}<div class="trace-row"><span>{String(i + 1).padStart(2, '0')}</span><p>{item}</p><i>✓</i></div>{/each}</div>{#if result.ingredients?.length > 1}<div class="notice-box"><b>Why these ingredients are combined</b>{#if result.combination_sources?.length}<p>These sources discuss the combination. Read the source passages and check whether they refer to the same formulation and strength.</p>{#each result.combination_sources as source}<div class="ingredient-evidence"><b>{source.title}</b><p>{sourceExcerpt(source.content)}</p><a href={source.url} target="_blank" rel="noopener noreferrer">Read reference ↗</a></div>{/each}{:else}<p>No reliable source explaining this exact combination was retrieved. The app will not guess why the ingredients were combined.</p>{/if}</div>{/if}<div class="notice-box"><b>Why we ask you to confirm the composition</b><p>Similar brand names can refer to different strengths, dosage forms or manufacturers. A text match alone cannot prove that the retrieved label belongs to your exact pack.</p></div></div>
         
 {:else if activeTab === 'precautions'}
   <div class="result-card wide-card">
@@ -625,6 +677,51 @@ function splitTags(value) {
           </div>
         {/if}
 
+      </div>
+    {/if}
+
+        {#if result.agent_analysis}
+      <div class="precaution-evidence-section">
+        <div class="precaution-section-heading">
+          <span class="card-kicker">LANGCHAIN AI AGENT</span>
+          <h3>AI-assisted medicine review</h3>
+        </div>
+
+        <div class="health-result">
+          <div class="chat-message-content">
+            {@html formatMessage(result.agent_analysis.answer)}
+          </div>
+
+          <p class="muted-copy">
+            AI-generated analysis based on the retrieved references.
+            This is educational information, not a validated medical
+            interaction assessment.
+          </p>
+
+          {#if result.agent_analysis.provider}
+            <p class="muted-copy">
+              AI provider: {result.agent_analysis.provider}
+            </p>
+          {/if}
+
+          {#if result.agent_analysis.sources?.length}
+            <div class="chat-citations">
+              <span>Supporting references</span>
+
+              {#each result.agent_analysis.sources as source}
+                {#if source.url}
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {source.title} ↗
+                  </a>
+                {/if}
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
     {/if}
 
@@ -810,15 +907,43 @@ function splitTags(value) {
   .chat-citations span { color: #62776d; font-weight: 700; }
   .chat-citations a { color: #27634d; text-decoration: underline; }
   .chat-compose {
-  margin-top: 8px;
+  margin-top: 12px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  border-radius: 14px;
 }
 
 .chat-compose input {
-  font-size: 16px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  font-size: 16px !important;
+  line-height: 1.5;
 }
 
 .chat-compose input::placeholder {
   font-size: 15px;
+}
+
+.chat-compose button {
+  min-height: 46px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 14px !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chat-citations {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ingredient-evidence p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #61786b;
 }
   .chat-footnote { margin: 10px 0 0; color: #74847d; font-size: .78rem; }
   .typing-bubble { display: flex; align-items: center; gap: 5px; }
@@ -828,8 +953,11 @@ function splitTags(value) {
   .typing-bubble small { margin-left: 7px; color: #74847d; }
   @keyframes chatPulse { 0%, 80%, 100% { opacity: .35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
   @media (max-width: 640px) {
-    .chat-bubble { max-width: 94%; padding: 11px 13px; }
+    .chat-bubble { max-width: 94%; padding: 12px 14px; }
     .chat-transcript { max-height: 440px; }
+    .chat-compose { gap: 6px; padding: 5px; }
+    .chat-compose input { min-height: 44px; padding: 10px; font-size: 15px !important; }
+    .chat-compose button { min-height: 42px; padding: 9px 12px; font-size: 13px !important; }
   }
 
 
